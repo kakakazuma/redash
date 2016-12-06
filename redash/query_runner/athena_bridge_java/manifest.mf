@@ -1,0 +1,2 @@
+Main-Class: J4Py
+Class-Path: py4j0.10.4.jar AthenaJDBCConnector.jar AthenaJDBC41-1.0.0.jar
