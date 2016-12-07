@@ -85,13 +85,9 @@ class Athena(BaseQueryRunner):
         info.setProperty("password", self.configuration.get('aws_secret_accesskey', ''))
         conn = None
 
-        logger.info("user: %s", self.configuration.get('aws_accesskey', ''))
-        logger.info("password: %s", self.configuration.get('aws_secret_accesskey', ''))
-
         try:
             region = self.configuration.get('region', 'us-east-1')
             host = 'jdbc:awsathena://athena.' + region + '.amazonaws.com:443/'
-            logger.info("host: %s", host)
 
             connector = gateway.jvm.io.redash.queryrunner.athena.AthenaJDBCConnector(info, host)
             conn = connector.getConnection()
