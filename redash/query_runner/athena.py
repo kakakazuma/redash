@@ -150,7 +150,7 @@ class Athena(BaseQueryRunner):
             error = None
         except Exception, ex:
             json_data = None
-            error = ex
+            error = str(ex)
 
         if conn is not None:
             conn.close()
