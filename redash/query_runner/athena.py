@@ -17,6 +17,8 @@ except ImportError:
     enabled = False
 
 class Athena(BaseQueryRunner):
+    noop_query = 'SHOW TABLES'
+
     @classmethod
     def configuration_schema(cls):
         return {
@@ -37,6 +39,10 @@ class Athena(BaseQueryRunner):
             },
             'required': ['region', 'aws_accesskey', 'aws_secret_accesskey', 's3_staging_dir']
         }
+
+    @classmethod
+    def annotate_query(cls):
+        return False
 
     @classmethod
     def enabled(cls):
@@ -145,7 +151,6 @@ class Athena(BaseQueryRunner):
         except Exception, ex:
             json_data = None
             error = ex
-            raise Exception("Failed run query. error=%s", error)
 
         if conn is not None:
             conn.close()
