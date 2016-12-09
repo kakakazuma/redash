@@ -10,22 +10,22 @@ logger = logging.getLogger(__name__)
 
 try:
     from py4j.java_gateway import JavaGateway
-    gateway = JavaGateway()
-    enabled = True
+    init_gateway = JavaGateway()
     ATHENA_TYPES_MAPPING = {
-        gateway.jvm.java.sql.Types.BIGINT: TYPE_INTEGER,
-        gateway.jvm.java.sql.Types.INTEGER: TYPE_INTEGER,
-        gateway.jvm.java.sql.Types.TINYINT: TYPE_INTEGER,
-        gateway.jvm.java.sql.Types.SMALLINT: TYPE_INTEGER,
-        gateway.jvm.java.sql.Types.FLOAT: TYPE_FLOAT,
-        gateway.jvm.java.sql.Types.DOUBLE: TYPE_FLOAT,
-        gateway.jvm.java.sql.Types.BOOLEAN: TYPE_BOOLEAN,
-        gateway.jvm.java.sql.Types.VARCHAR: TYPE_STRING,
-        gateway.jvm.java.sql.Types.NVARCHAR: TYPE_STRING,
-        gateway.jvm.java.sql.Types.DATE: TYPE_DATE,
-        gateway.jvm.java.sql.Types.TIME: TYPE_DATE,
-        gateway.jvm.java.sql.Types.TIMESTAMP: TYPE_DATE
+        init_gateway.jvm.java.sql.Types.BIGINT: TYPE_INTEGER,
+        init_gateway.jvm.java.sql.Types.INTEGER: TYPE_INTEGER,
+        init_gateway.jvm.java.sql.Types.TINYINT: TYPE_INTEGER,
+        init_gateway.jvm.java.sql.Types.SMALLINT: TYPE_INTEGER,
+        init_gateway.jvm.java.sql.Types.FLOAT: TYPE_FLOAT,
+        init_gateway.jvm.java.sql.Types.DOUBLE: TYPE_FLOAT,
+        init_gateway.jvm.java.sql.Types.BOOLEAN: TYPE_BOOLEAN,
+        init_gateway.jvm.java.sql.Types.VARCHAR: TYPE_STRING,
+        init_gateway.jvm.java.sql.Types.NVARCHAR: TYPE_STRING,
+        init_gateway.jvm.java.sql.Types.DATE: TYPE_DATE,
+        init_gateway.jvm.java.sql.Types.TIME: TYPE_DATE,
+        init_gateway.jvm.java.sql.Types.TIMESTAMP: TYPE_DATE
     }
+    enabled = True
 
 except ImportError:
     enabled = False
@@ -100,6 +100,7 @@ class Athena(BaseQueryRunner):
         return schema.values()
 
     def run_query(self, query, user):
+        gateway = JavaGateway()
         info = gateway.jvm.java.util.Properties()
         info.setProperty("s3_staging_dir", self.configuration.get('s3_staging_dir', ''))
         info.setProperty("user", self.configuration.get('aws_accesskey', ''))
@@ -131,11 +132,12 @@ class Athena(BaseQueryRunner):
                     try:
                         if type == gateway.jvm.java.sql.Types.ARRAY:
                             row[name] = rs.getArray(name)
-                        elif (type == gateway.jvm.java.sql.Types.BIGINT or
-                                      type == gateway.jvm.java.sql.Types.INTEGER or
-                                      type == gateway.jvm.java.sql.Types.TINYINT or
-                                      type == gateway.jvm.java.sql.Types.SMALLINT):
-                            row[name] = rs.getInt(name)
+                        elif type == gateway.jvm.java.sql.Types.BIGINT:
+                            row[name] = rs.getLong(name)
+                        elif (type == gateway.jvm.java.sql.Types.INTEGER or
+                                type == gateway.jvm.java.sql.Types.TINYINT or
+                                type == gateway.jvm.java.sql.Types.SMALLINT):
+                            row[name] = rs.getLong(name)
                         elif type == gateway.jvm.java.sql.Types.BOOLEAN:
                             row[name] = rs.getBoolean(name)
                         elif type == gateway.jvm.java.sql.Types.BLOB:
@@ -149,8 +151,8 @@ class Athena(BaseQueryRunner):
                         elif type == gateway.jvm.java.sql.Types.VARCHAR:
                             row[name] = rs.getString(name)
                         elif (type == gateway.jvm.java.sql.Types.DATE or
-                                      type == gateway.jvm.java.sql.Types.TIME or
-                                      type == gateway.jvm.java.sql.Types.TIMESTAMP):
+                                type == gateway.jvm.java.sql.Types.TIME or
+                                type == gateway.jvm.java.sql.Types.TIMESTAMP):
                             # TODO - rs.getTimeStamp cause error in Athena.
                             row[name] = rs.getObject(name).toString()
                         else:
