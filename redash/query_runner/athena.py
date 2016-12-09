@@ -12,9 +12,24 @@ try:
     from py4j.java_gateway import JavaGateway
     gateway = JavaGateway()
     enabled = True
+    ATHENA_TYPES_MAPPING = {
+        gateway.jvm.java.sql.Types.BIGINT: TYPE_INTEGER,
+        gateway.jvm.java.sql.Types.INTEGER: TYPE_INTEGER,
+        gateway.jvm.java.sql.Types.TINYINT: TYPE_INTEGER,
+        gateway.jvm.java.sql.Types.SMALLINT: TYPE_INTEGER,
+        gateway.jvm.java.sql.Types.FLOAT: TYPE_FLOAT,
+        gateway.jvm.java.sql.Types.DOUBLE: TYPE_FLOAT,
+        gateway.jvm.java.sql.Types.BOOLEAN: TYPE_BOOLEAN,
+        gateway.jvm.java.sql.Types.VARCHAR: TYPE_STRING,
+        gateway.jvm.java.sql.Types.NVARCHAR: TYPE_STRING,
+        gateway.jvm.java.sql.Types.DATE: TYPE_DATE,
+        gateway.jvm.java.sql.Types.TIME: TYPE_DATE,
+        gateway.jvm.java.sql.Types.TIMESTAMP: TYPE_DATE
+    }
 
 except ImportError:
     enabled = False
+    ATHENA_TYPES_MAPPING = {}
 
 class Athena(BaseQueryRunner):
     noop_query = 'SHOW TABLES'
@@ -56,7 +71,7 @@ class Athena(BaseQueryRunner):
         super(Athena, self).__init__(configuration)
 
     def get_schema(self, get_stats=False):
-        # TODO - same with presto.py
+        # TODO - duplicate with presto.py
         schema = {}
         query = """
         SELECT table_schema, table_name, column_name
@@ -107,7 +122,6 @@ class Athena(BaseQueryRunner):
                 column['name'] = rsmd.getColumnName(i + 1)
                 column['type'] = rsmd.getColumnType(i + 1)
                 columns.append(column)
-            print columns
             rows = []
             while rs.next():
                 row = {}
@@ -137,7 +151,7 @@ class Athena(BaseQueryRunner):
                         elif (type == gateway.jvm.java.sql.Types.DATE or
                                       type == gateway.jvm.java.sql.Types.TIME or
                                       type == gateway.jvm.java.sql.Types.TIMESTAMP):
-                            # TODO rs.getTimeStamp cause error in Athena.
+                            # TODO - rs.getTimeStamp cause error in Athena.
                             row[name] = rs.getObject(name).toString()
                         else:
                             row[name] = rs.getObject(name)
@@ -145,12 +159,18 @@ class Athena(BaseQueryRunner):
                         row[name] = None
                 rows.append(row)
 
-            data = {'columns': map(lambda column: column.get('name', ''), columns), 'rows': rows}
+            data = {'columns': map(lambda column: {
+                        "name": column.get('name', ''),
+                        "friendly_name": column.get('name', ''),
+                        "type": ATHENA_TYPES_MAPPING.get(column.get('type', 0), "string")
+                    }, columns),
+                    'rows': rows}
             json_data = json.dumps(data, cls=JSONEncoder)
             error = None
         except Exception, ex:
-            json_data = None
+            # TODO - cancel query
             error = str(ex)
+            json_data = None
 
         if conn is not None:
             conn.close()
